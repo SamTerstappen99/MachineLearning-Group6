@@ -11,10 +11,11 @@ import folium
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
-#import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
 
 
 #%% import data and merge
@@ -274,4 +275,44 @@ plt.yticks(y_values, price_range.index, fontsize=12)
 plt.tight_layout()
 plt.show()
 
-# %%
+# %% Neural Networks (Proof of concepts)
+
+import tensorflow as tf
+
+# param selection
+X = data[['product_category_name_english_encoded_x', 'purchase_month', 'location_cluster', 'order_count']]
+
+# Label selection
+y = data['price']
+
+# param normalization
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# dataset splits
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# building nn
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(16, activation='relu'),
+    tf.keras.layers.Dense(1)  # Output layer without activation for continuous price predictions
+])
+
+# compile model
+model.compile(optimizer='adam',
+              loss='mean_squared_error',  # Mean Squared Error for price prediction
+              metrics=['mean_absolute_error'])  # Mean Absolute Error for evaluation
+
+# Model trainen
+model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=1)
+
+# prediction on test set
+y_pred = model.predict(X_test)
+
+# Evaluate model with MAE en MSE
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+print("Mean Absolute Error:", mae)
+print("Mean Squared Error:", mse)
